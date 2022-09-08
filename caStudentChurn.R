@@ -3,15 +3,17 @@
 #############################
 
 
-library("FactoMineR")
-library("factoextra")
+library(FactoMineR)
+library(factoextra)
+library(tidyverse)
+library(janitor)
+library(corrplot)
 
 dat1 <- read.csv("studentChurn.csv", header = TRUE) %>% clean_names()
 
 attach(dat1)
 
 print(dat1)
-
 
 dat1 <- as.data.frame(dat1)
 
@@ -31,9 +33,9 @@ dat1$active <- NULL
 dt2 <- as.table(as.matrix(dat1))
 
 
-dt2 <- sqrt(dt2)
+# dt2 <- sqrt(dat1)
 
-dt2 <- as.table(dt2)
+# dt2 <- as.table(dat1)
 
 
 #Plot Correlations
@@ -44,9 +46,10 @@ corrplot(correlations)
 
 #Compute chi-squared test to determine if relationships are statistically significant 
 chisq <- chisq.test(dt2)
-chisq
 
-chisq_plot <- as.data.frame(chisq)
+#  If needed : chisq <- chisq.test(dt2, simulate.p.value = T)
+
+chisq
 
 #Compute correspondence analysis
 CA(dt2, ncp = 5, graph = TRUE)
@@ -66,9 +69,9 @@ row_values <- get_ca_row(res_ca)
 print(row_values)
 
 #Examine quality of the representation of the rows in data
-plot(row_values$contrib)
+row_values$contrib
 row_values$cos2
-plot(row_values$cos2)
+
 
 #plot dimensions
 corrplot(res_ca$row$coord, is.corr = FALSE)
