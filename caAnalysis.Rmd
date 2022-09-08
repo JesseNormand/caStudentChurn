@@ -1,0 +1,189 @@
+---
+title: "Correspondance Analysis - Student Churn"
+author: "Jesse"
+output: 
+  html_document:
+    
+   toc: true
+   toc_float: true
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+library("FactoMineR")
+library("factoextra")
+library("tidyverse")
+library("janitor")
+library("DT")
+
+```
+
+## Overview
+
+In this demonstration, I will outline some of my thoughts and logic
+related to my approach to quantifying and verifying data that can be
+sourced from a university's learning management system (LM).
+
+Specifically, we are looking at student retention and how we can derive
+business-related decisions from our data.
+
+My objective is to conduct a correspondence analysis to qualify
+relationships among categorical variables.
+
+## Begin Analysis
+
+In this analysis, we will use a contrived data set that I manufactured.
+The data set is a contingency table that encapsulates some descriptive
+data of students. The goal of this CA analysis is to discover if there
+is statistical significance in any of the variables related to the
+dependency on student retention.
+
+Put another way, the null hypothesis is that there is not a meaningful
+relationship between our independent and dependent variables.
+
+Let's find out.
+
+We will begin by looking at the table to provide context for this
+report. For the purpose of this demonstration, I will not go into the
+details of the data wrangling and other EDA techniques used to shape and
+center data or the R functions and compumtations of the analysis. I will
+leave a link to my github repository to view the code.
+
+```{r pressure, echo=FALSE}
+
+dat1 <- read.csv("studentChurn.csv", header = TRUE) %>% clean_names()
+
+attach(dat1)
+
+dat1 <- as.data.frame(dat1)
+
+row.names(dat1) <- c("gender_f",
+                     "gender_m",
+                     "age_under_21",
+                     "age_over_21",
+                     "family_closeby",
+                     "admission_before_term_over_90_days",
+                     "traveltime_miles_greater_20",
+                     "studytime_greater_4",
+                     "sat_scores_greater_1100"
+)
+dat1$x <- NULL
+dat1$active <- NULL
+
+dt2 <- as.table(as.matrix(dat1))
+
+
+scale(dt2)
+
+
+```
+
+## Correspondence Analysis
+
+CA gives us a powerful tool to derive insight into correlation groupings
+of categorical variables. Maybe even more significant is that CA
+provides the ability to extract information and compress and plot the
+coordinates of multiple variables into a two-dimensional plot for
+analysis.
+
+Our goal here is to formulate some framework for analyzing correlations,
+if any, among retention_yes and retention_no with the independent
+variables.
+
+Our first step is to conduct a chi-squared analysis to quantify
+statistical significance.
+
+Our test results indicate a statistically significant correlation is
+present; therefore, we can continue with our analysis.
+
+```{r echo=FALSE}
+chisq <- chisq.test(dat1)
+chisq
+
+
+```
+
+Our next step is to compute the correspondence analysis. Thankfully, R
+provides a wonderful CA package called "Factoextra" that provides the
+framework and functions to compute the analysis. However, for context,
+the math behind CA is quite complex involving projecting multiple
+dimensions of chi-squared distances onto a 2d plot map. The process is
+fascinating and defiantly worth reading up on if intersted.
+
+My demonstration here will extract some of the computational results of
+the CA measurments so that we can conduct our analysis.
+
+After running the CA function, we have objects shown below that will be
+useful in continuing our analysis.
+
+```{r echo=FALSE}
+#Compute correspondence analysis
+CA(dat1, ncp = 5, graph = FALSE)
+res_ca <- CA(dat1, graph = FALSE)
+
+```
+
+We will not go through every one of these results but let's extract and
+plot the row contributions so that we can have an understanding of what
+information is being retained and contributing most to our two
+dimensions graph. This graph shows us the essence of what CA is dong for
+us. We will retain the information that provides the greatest variance
+inertia.
+
+We see in the data below which values are contributing the most inertia
+to each dimension. For Dim 1 it is "gender_f" and for Dim 2, This is how
+we can take multiple dimensions of data, and compress them into two or
+three dimensions for a powerful analysis even though some of the
+original information has been intentionally lost in the process.
+
+```{r echo=FALSE}
+row_values$cos2
+fviz_contrib(res_ca, choice = 'row', top = 10)
+fviz_contrib(res_ca, choice = 'row', top = 10, axes = 2)
+
+
+
+```
+
+## Results
+
+Here is where the real magic begins. Through a process of taking the
+sums of squares from fitting a line through the best fit, plotting
+variables, rotating coordinance, and then removing the dimension, we now
+have a visual of our data in a relationship format.
+
+How cool is that!
+
+The symmetric plot shows us the correlation between row to row(blue) and
+column to column(red). We can infer a variable-to-variable correlation
+(row to column); however, this plot does not accurately depict the
+strength of that row-to-column relationship.
+
+To analyze the strength of the correlation, we use the asymmetric plot.
+The asymmetric plot uses linear algebra to measure the angles between
+the lines. Lines traveling in the same direction and less than 90
+degrees indicate a strong correlation. The further away the lines are
+from each other parallel, the weaker the correlation.
+
+Lines that are greater than 90 degrees, and traveling away from each
+other confirm no correlations.
+
+Lastly, the farther away the data points are from the center of the
+graph, the stronger the variance impact the information has on the
+analysis output.
+
+```{r echo=FALSE}
+fviz_ca_biplot(res_ca, repel = TRUE)
+fviz_ca_biplot(res_ca, 
+               map ="rowprincipal", arrow = c(TRUE, TRUE),
+               repel = TRUE)
+```
+
+## Analysis
