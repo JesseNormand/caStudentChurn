@@ -1,0 +1,2 @@
+# caStudentChurn
+correspondence analysis project
